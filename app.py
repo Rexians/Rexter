@@ -45,6 +45,7 @@ stream.add_rules(
     [
         tweepy.StreamRule("@MarvelChampions"),
         tweepy.StreamRule("#MCoC"),
+        tweepy.StreamRule("@McocBot"),
         tweepy.StreamRule("#ContestofChampions"),
         tweepy.StreamRule("#ContestOfChampions"),
         tweepy.StreamRule("#contestofchampions"),
