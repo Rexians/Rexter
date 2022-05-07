@@ -55,5 +55,4 @@ stream.add_rules(
 stream.filter(
     tweet_fields=["referenced_tweets"],
     expansions="referenced_tweets.id",
-    languages=["en"],
 )
