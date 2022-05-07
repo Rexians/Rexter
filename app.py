@@ -28,13 +28,14 @@ class MCOC(tweepy.StreamingClient):
 
     def on_tweet(self, tweet: tweepy.Tweet):
         id = tweet.id
-        status = api.get_status(id)
         if tweet.in_reply_to_user_id is None:
             if tweet.referenced_tweets is None:
-                api.retweet(id)
-                api.create_favorite(id)
-                logger.info(f" Retweeted {id}")
-                logger.info(f" Liked {id}")
+                try:
+                    api.retweet(id)
+                    api.create_favorite(id)
+                    logger.info(f" Retweeted & Liked {id}")
+                except:
+                    logger.error(f" Could't perform action on {id}")
 
     def on_request_error(self, status_code):
         logger.critical(f" Encountered error: {status_code}")
@@ -51,4 +52,8 @@ stream.add_rules(
         tweepy.StreamRule("#contestofchampions"),
     ]
 )
-stream.filter(tweet_fields=["referenced_tweets"], expansions="referenced_tweets.id")
+stream.filter(
+    tweet_fields=["referenced_tweets"],
+    expansions="referenced_tweets.id",
+    languages=["en"],
+)
