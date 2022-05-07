@@ -1,6 +1,6 @@
 # Rexter
 
-[Rexter](https://twitter.com/McocBot) is a Twitter Bot whoch retweets and likes all tweets related to MCoC.
+[Rexter](https://twitter.com/McocBot) is a Twitter Bot which retweets and likes all tweets related to MCoC.
 
 ## Usage
 
