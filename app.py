@@ -21,10 +21,7 @@ bearer_token = os.getenv("BEARER_TOKEN")
 client_id = os.getenv("CLIENT_ID")
 client_secret = os.getenv("CLIENT_SECRET")
 
-auth = tweepy.OAuth1UserHandler(
-    consumer_key, consumer_secret, access_token, access_token_secret
-)
-api = tweepy.API(auth)
+api = tweepy.Client(bearer_token=bearer_token, consumer_key=consumer_key, consumer_secret=consumer_secret, access_token=access_token, access_token_secret=access_token_secret)
 
 
 # ---- GENERAL VARIABLES ----
@@ -33,22 +30,23 @@ HOURS = 24
 MINUTES = 60
 RETWEET_LIMIT = 1500
 
-current_date = datetime.now()
-
 monthly_variables = {
-    "current_month" : current_date.month,
-    "days_in_a_month" : calendar.monthrange(current_date.year, current_date.month)[1],
+    "current_month" : datetime.now().month,
+    "days_in_a_month" : calendar.monthrange(datetime.now().year, datetime.now().month)[1],
 }
 monthly_variables["retweets_per_day"] = math.floor(RETWEET_LIMIT / monthly_variables["days_in_a_month"])
 monthly_variables["time_interval"] = math.floor(HOURS * MINUTES / monthly_variables["retweets_per_day"])
 
 daily_variables = {
-    "current_day" : current_date.day,
+    "current_day" : datetime.now().day,
     "total_retweets" : 0,
     "tweets" : set(),
     "current_time_interval_id" : 0,
-    "previous_time_interval" : current_date.minute
+    "previous_time_interval" : datetime.now().minute,
 }
+
+next_interval = datetime.now().minute + monthly_variables["time_interval"]
+daily_variables["next_time_interval"] = next_interval if next_interval <= 59 else next_interval - 60
 
 def monthly_reset():
     monthly_variables["current_month"] = datetime.now().month
@@ -65,7 +63,9 @@ def daily_reset():
     daily_variables["total_retweets"] = 0
     daily_variables["tweets"] = set()
     daily_variables["current_time_interval_id"] = 0
-    daily_variables["previous_time_interval"] = 0
+    daily_variables["previous_time_interval"] = datetime.now().minute
+    next_interval = datetime.now().minute + monthly_variables["time_interval"]
+    daily_variables["next_time_interval"] = next_interval if next_interval <= 59 else next_interval - 60
 
 def on_day_start():
     for i in range(retweets_per_day):
@@ -85,15 +85,11 @@ def update_time():
     while True:
         check_month_change()
         check_day_change()
-        if (daily_variables["previous_time_interval"] + monthly_variables["time_interval"]) > 59:
-            if (daily_variables["previous_time_interval"] + monthly_variables["time_interval"] - 60) == datetime.now().minute:
+        if (datetime.now().minute >= daily_variables["next_time_interval"]):
                 retweet(daily_variables["current_time_interval_id"])
                 daily_variables["previous_time_interval"] = datetime.now().minute
-                daily_variables["current_time_interval_id"] += 1
-        else:
-            if (daily_variables["previous_time_interval"] + monthly_variables["time_interval"]) == datetime.now().minute:
-                retweet(daily_variables["current_time_interval_id"])
-                daily_variables["previous_time_interval"] = datetime.now().minute
+                next_interval = datetime.now().minute + monthly_variables["time_interval"]
+                daily_variables["next_time_interval"] = next_interval if next_interval <= 59 else next_interval - 60
                 daily_variables["current_time_interval_id"] += 1
 
 def retweet(time_interval):
@@ -112,16 +108,16 @@ def retweet_until_limit_reached():
 
     busiest_intervals = []
     for interval, tweet_set in daily_variables["tweets"]:
-        busiest_intervals.append(len(tweet_set), interval)
+        busiest_intervals.append((len(tweet_set), interval))
 
     busiest_intervals.sort(reverse=True)
 
     count = 0
     failsafe = 1000
-    while count != monthly_variables["retweets_per_day"] - daily_variables["total_retweets"]:
+    while count != (monthly_variables["retweets_per_day"] - daily_variables["total_retweets"]):
         failsafe -= 1
 
-        if failsafe == 0:
+        if failsafe < 0:
             logger.error("Fail safe reached. Check code")
             return
 
